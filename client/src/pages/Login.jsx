@@ -1,38 +1,48 @@
-import React, { useContext, useState } from 'react'
+import { useContext, useState } from 'react'
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const Login = () => {
 
   const navigate = useNavigate();
-  const { backendUrl, setIsLoggedIn,  } = useContext(AppContext);
+  const { backendUrl, setIsLoggedIn, getUserData} = useContext(AppContext);
 
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const onSubmitHandler = async () => {
+  const onSubmitHandler = async (e) => {
     try {
       e.preventDefault();
 
+      axios.defaults.withCredentials = true;
+
       if(state === "Sign Up") {
         const { data } = await axios.post(`${backendUrl}/api/auth/register`, {name, email, password});
-        console.log("data is: ", data);
+        if(data.success) {
+          setIsLoggedIn(true);
+          getUserData();
+          navigate('/');
+        } else {
+          toast.error(data.message || "Registration failed");
+        }
+      } else {
+        const { data } = await axios.post(`${backendUrl}/api/auth/login`, { email, password });
 
         if(data.success) {
           setIsLoggedIn(true);
+          getUserData();
           navigate('/');
         } else {
-          alert(data.message);
+          toast.error(data.message || "Login failed"); 
         }
-      } else {
-
       }
     } catch (error) {
-      
+      toast.error(error.message || "An error occured!");
     }
   }
 
@@ -58,7 +68,7 @@ const Login = () => {
               <input
                 className='bg-transparent outline-none'
                 onChange={(e) => setName(e.target.value)}
-                // value={name}
+                value={name}  
                 type="text" placeholder='Full Name' required />
             </div>
           )}
@@ -67,22 +77,24 @@ const Login = () => {
             <img src={assets.mail_icon} alt="" />
             <input
               onChange={(e) => setEmail(e.target.value)}
-              // value={email}
+              value={email}
               className='bg-transparent outline-none'
               type="email" placeholder='Email' required />
           </div>
 
-          <div className='flex items-center mb-4 gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
+          <div className='flex items-center mb-8 gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
             <img src={assets.lock_icon} alt="" />
             <input
               onChange={(e) => setPassword(e.target.value)}
               className='bg-transparent outline-none'
               type="password" placeholder='Password' required />
           </div>
-
-          <p 
+          {
+            state !== "Sign Up" && 
+            <p 
           onClick={() => navigate('/reset-password')}
           className='mb-4 text-indigo-500 cursor-pointer'>Forgot password</p>
+          }
 
           <button className='w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium cursor-pointer'>{state}</button>
         </form>

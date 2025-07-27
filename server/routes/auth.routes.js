@@ -9,8 +9,8 @@ authRouter.post('/login', loginUser);
 authRouter.post('/logout', logoutUser);
 authRouter.post('/send-verification-otp', userAuth, sendVerificationOtp);
 authRouter.post('/verify-account', userAuth, verifyEmail);
-authRouter.post('/is-auth', userAuth, isAuthenticated)
-authRouter.post('/send-rest-otp', sendResetOtp)
+authRouter.get('/is-auth', userAuth, isAuthenticated)
+authRouter.post('/send-reset-otp', sendResetOtp)
 authRouter.post('/reset-password', resetPassword)
 
 

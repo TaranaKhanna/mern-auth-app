@@ -44,7 +44,7 @@ const registerUser = async (req, res) => {
             from: process.env.SENDER_EMAIL,
             to: email,
             subject: "Welcome to Learning Platform",
-            text: `Welcome to Learning Platform. Your account has been with eamil id: ${email}`
+            text: `Welcome to Learning Platform. Your account has been registered with email id: ${email}`
         }
 
         await transporter.sendMail(mailOptions);
