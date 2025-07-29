@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import transporter from "../config/nodemailer.js";
+import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../config/emailTemplate.js";
 
 const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
@@ -176,7 +177,8 @@ const sendVerificationOtp = async (req, res) => {
             from: process.env.SENDER_EMAIL,
             to: user.email,
             subject: "Account Verification OTP",
-            text: `Your OTP for account verification is ${otp}. It is valid for 24 hours.`
+            // text: `Your OTP for account verification is ${otp}. It is valid for 24 hours.`,{{
+            html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace("{{email}}", user.email)
         }
 
         await transporter.sendMail(mailOptions);
@@ -202,7 +204,7 @@ const sendVerificationOtp = async (req, res) => {
 const verifyEmail = async (req, res) => {
     const { userId } = req;
     const { otp } = req.body;
-
+    
     if (!userId || !otp) {
         return res.status(400).json({
             success: false, message: "User ID and OTP are required"
@@ -264,64 +266,65 @@ const isAuthenticated = async (req, res) => {
 const sendResetOtp = async (req, res) => {
     const { email } = req.body;
 
-    if(!email){
+    if (!email) {
         return res.status(400).json({
             success: false,
             message: "email is required"
         })
     }
 
-   try {
-     const user = await User.findOne({ email });
- 
-     if(!user){
-         return res.status(404).json({success: false, message: "User does not exist"})
-     }
- 
-     const otp = String( Math.floor(Math.random() * 900000 + 100000));
- 
-     user.resetOtp = otp;
-     user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
+    try {
+        const user = await User.findOne({ email });
 
-     await user.save();
- 
-     const mailOptions = {
-         from: process.env.SENDER_EMAIL,
-         to: email,
-         subject: "Reset otp to verify account",
-         text: `the otp to verify your account is: ${otp}. It is valid for 24 hours`
-     };
- 
-     await transporter.sendMail(mailOptions);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User does not exist" })
+        }
 
-     return res.status(200).json({success: true, message: "Verification Otp sent to your email."})
+        const otp = String(Math.floor(Math.random() * 900000 + 100000));
 
-   } catch (error) {
-        return res.status(500).json({success: false, message: error.message})
-   }
+        user.resetOtp = otp;
+        user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
+
+        await user.save();
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: "Reset otp to verify account",
+            //  text: `the otp to verify your account is: ${otp}. It is valid for 24 hours`,
+            html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}", otp).replace("{{email}}", user.email)
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({ success: true, message: "Verification Otp sent to your email." })
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message })
+    }
 }
 
 // reset user password
 const resetPassword = async (req, res) => {
     const { email, newPassword, otp } = req.body;
 
-    if(!email || !newPassword || !otp){
+    if (!email || !newPassword || !otp) {
         return res.status(400).json({
             success: false, message: "Email, otp and new password are required."
         })
     }
 
     try {
-        
+
         const user = await User.findOne({ email });
-        
-        if(!user){
+
+        if (!user) {
             return res.status(404).json({
                 success: false, message: "User not found"
             })
         }
 
-        if(
+        if (
             user.resetOtp === '' ||
             user.resetOtp !== otp ||
             user.resetOtpExpireAt < Date.now()

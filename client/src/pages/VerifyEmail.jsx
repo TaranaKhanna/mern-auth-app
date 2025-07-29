@@ -40,8 +40,6 @@ const VerifyEmail = () => {
       axios.defaults.withCredentials = true;
       
       const otpArray = inputRefs.current.map(e => e.value);
-      console.log("otpArray: ", otpArray);
-      console.log("hi")
       const otp = otpArray.join('');
 
       const { data } = await axios.post(`${backendUrl}/api/auth/verify-account`, { otp });
